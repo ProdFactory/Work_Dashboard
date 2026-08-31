@@ -223,6 +223,7 @@
   let saving = false;
   let loadError = false;
   let currentLogin = null;
+  let dataLoaded = false;
 
   // ---------- date helpers ----------
   function startOfWeek(d){ const x=new Date(d); const day=(x.getDay()+6)%7; x.setDate(x.getDate()-day); x.setHours(0,0,0,0); return x; }
@@ -312,6 +313,7 @@
       if(res.ok){ STATE = await res.json(); migrateState(); loadError = false; }
       else { loadError = true; }
     }catch(e){ loadError = true; }
+    dataLoaded = true;
     renderApp();
   }
   async function loadFromApiFresh(){
@@ -320,6 +322,7 @@
       STATE = JSON.parse(b64Decode(file.content));
       migrateState();
     }catch(e){ /* keep whatever we had */ }
+    dataLoaded = true;
     renderApp();
   }
 
@@ -359,8 +362,21 @@
     if(route.mode==='create') body = renderCreate(writable);
     else if(route.mode==='journal'){
       const j = findJournal(route.id);
-      if(!j){ route = { mode:'menu' }; body = renderMenu(writable); }
-      else body = renderJournal(j, writable);
+      if(j){
+        body = renderJournal(j, writable);
+      } else if(!dataLoaded){
+        // Дані ще завантажуються (перший рендер до відповіді fetch) —
+        // НЕ скидаємо route на меню, інакше глибоке посилання на журнал
+        // губиться назавжди (hash лишається тим самим і hashchange більше
+        // не спрацює, тож користувач "застрягає" на меню).
+        body = `<div class="empty-state"><p>Завантаження журналу…</p></div>`;
+      } else {
+        // Дані вже завантажені, а такого журналу справді нема — ось тепер
+        // безпечно повернутись у меню, і синхронізувати адресний рядок.
+        route = { mode:'menu' };
+        if(location.hash) location.hash = '';
+        body = renderMenu(writable);
+      }
     } else {
       body = renderMenu(writable);
     }
