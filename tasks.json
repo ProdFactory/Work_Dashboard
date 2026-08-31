@@ -28,10 +28,18 @@
           "text": "1",
           "done": false,
           "createdAt": "2026-08-31T15:56:25.097Z"
+        },
+        {
+          "id": "f3ad69c5-7c95-4410-936a-0ce5517453e6",
+          "person": "3dab9c84-73d3-4caf-b61e-25a5aa00bfc7",
+          "date": "2026-08-31",
+          "text": "2",
+          "done": false,
+          "createdAt": "2026-08-31T16:00:06.614Z"
         }
       ],
       "createdAt": "2026-08-31T15:53:48.893Z",
-      "updatedAt": "2026-08-31T15:56:25.097Z"
+      "updatedAt": "2026-08-31T16:00:06.614Z"
     }
   ]
 }
