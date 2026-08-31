@@ -22,16 +22,16 @@
       ],
       "tasks": [
         {
-          "id": "2b3365ca-7a52-467f-879c-819654fc25e5",
-          "person": "f4bc2a1d-6906-40e7-a41e-a4d82e9cca4c",
+          "id": "d79744fd-478c-4bd6-84d4-c746255ee155",
+          "person": "3dab9c84-73d3-4caf-b61e-25a5aa00bfc7",
           "date": "2026-08-31",
-          "text": "Онбордінг",
+          "text": "1",
           "done": false,
-          "createdAt": "2026-08-31T15:54:52.126Z"
+          "createdAt": "2026-08-31T15:56:25.097Z"
         }
       ],
       "createdAt": "2026-08-31T15:53:48.893Z",
-      "updatedAt": "2026-08-31T15:54:52.126Z"
+      "updatedAt": "2026-08-31T15:56:25.097Z"
     }
   ]
 }
