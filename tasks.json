@@ -1,3 +1,28 @@
 {
-  "journals": []
+  "journals": [
+    {
+      "id": "fc97e062-deaa-4432-926f-26d23f78ae9c",
+      "name": "Calorie Tracker",
+      "people": [
+        {
+          "id": "c4439f0e-5564-4ee0-8e04-7d89db1132e1",
+          "name": "Микола",
+          "colorId": "blue"
+        },
+        {
+          "id": "b46b838f-d7d4-467a-bd4b-f9ee97c66b06",
+          "name": "Назар",
+          "colorId": "violet"
+        },
+        {
+          "id": "c0258c2e-70a2-4ff0-a142-e2cb59f32868",
+          "name": "Леся",
+          "colorId": "amber"
+        }
+      ],
+      "tasks": [],
+      "createdAt": "2026-08-31T15:52:44.396Z",
+      "updatedAt": "2026-08-31T15:52:44.396Z"
+    }
+  ]
 }
