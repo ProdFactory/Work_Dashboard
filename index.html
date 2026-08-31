@@ -1,0 +1,676 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Calorie Tracker Journal</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+  :root{
+    --bg:#F3F6EF;
+    --surface:#FFFFFF;
+    --surface-2:#F8FAF5;
+    --border:#DCE3D2;
+    --ink:#1B241C;
+    --ink-soft:#51604B;
+    --muted:#8D9885;
+    --accent:#2F7A5C;
+    --accent-ink:#FFFFFF;
+    --accent-soft:#E1F0E7;
+    --danger:#B4452D;
+    --danger-soft:#F5E1DA;
+    --tag-blue:#3B6EA8;   --tag-blue-soft:#E4ECF6;
+    --tag-violet:#7C4FA0; --tag-violet-soft:#EEE3F5;
+    --tag-amber:#B8802E;  --tag-amber-soft:#F7EDDA;
+    --tag-green:#3E8B5D;  --tag-green-soft:#E1F0E7;
+    --tag-red:#B4452D;    --tag-red-soft:#F5E1DA;
+    --tag-teal:#2E8E8E;   --tag-teal-soft:#DFF0F0;
+    --tag-pink:#B0537D;   --tag-pink-soft:#F5E3EC;
+    --tag-gray:#5B6A63;   --tag-gray-soft:#E7EBE6;
+    --shadow:0 1px 2px rgba(20,30,18,.05),0 6px 20px -10px rgba(20,30,18,.16);
+    color-scheme:light;
+  }
+  *{box-sizing:border-box;}
+  body{ margin:0; background:var(--bg); color:var(--ink); font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; -webkit-font-smoothing:antialiased; }
+  #app{ max-width:1180px; margin:0 auto; padding:22px 20px 60px; }
+  h1,h2,h3{ font-family:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif; text-wrap:balance; margin:0; }
+  .mono{ font-family:"IBM Plex Mono","SFMono-Regular",Consolas,monospace; font-variant-numeric:tabular-nums; }
+  button, input{ font-family:inherit; }
+
+  /* ---------- persistent top bar (auth + refresh) ---------- */
+  .app-topbar{ display:flex; justify-content:flex-end; gap:10px; margin-bottom:14px; flex-wrap:wrap; }
+  .pill-btn{ all:unset; cursor:pointer; font:600 11px/1 "IBM Plex Sans",sans-serif; letter-spacing:.02em; color:var(--accent); padding:7px 10px; border-radius:7px; border:1px solid var(--accent-soft); white-space:nowrap; background:var(--surface); box-shadow:var(--shadow); }
+  .pill-btn:hover{ background:var(--accent-soft); }
+  .authbox{ display:flex; align-items:center; gap:8px; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:8px 12px; box-shadow:var(--shadow); font-size:12.5px; }
+  .authbox .who{ font-weight:600; }
+  .authbox .signout{ all:unset; cursor:pointer; color:var(--muted); font-size:12px; text-decoration:underline; }
+  .authbox .signout:hover{ color:var(--danger); }
+  .saving-dot{ width:7px; height:7px; border-radius:50%; background:var(--accent); animation:pulse 1s ease-in-out infinite; }
+  @keyframes pulse{ 0%,100%{opacity:.3;} 50%{opacity:1;} }
+
+  .back-link{ all:unset; cursor:pointer; display:inline-flex; align-items:center; gap:4px; font:600 12px/1 "IBM Plex Sans",sans-serif; color:var(--ink-soft); padding:6px 0; margin-bottom:14px; }
+  .back-link:hover{ color:var(--accent); }
+  .h1{ font-size:26px; font-weight:800; letter-spacing:-.01em; }
+  .page-sub{ margin-top:6px; color:var(--ink-soft); font-size:13.5px; }
+
+  .banner{ display:none; align-items:center; gap:8px; background:var(--accent-soft); color:var(--ink); border:1px solid var(--border); border-radius:8px; padding:9px 14px; font-size:13px; margin-bottom:16px; }
+  .banner.show{ display:flex; }
+  .banner .dot{ width:7px; height:7px; border-radius:50%; background:var(--accent); flex:none; }
+  .banner.warn{ background:var(--danger-soft); }
+  .banner.warn .dot{ background:var(--danger); }
+
+  /* ---------- menu ---------- */
+  .menu-head{ display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:22px; }
+  .journal-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:14px; }
+  .journal-card{ position:relative; text-align:left; all:unset; cursor:pointer; display:block; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px; box-shadow:var(--shadow); }
+  .journal-card:hover{ border-color:var(--accent); }
+  .journal-card .name{ font:700 15px/1.3 "Public Sans",sans-serif; padding-right:20px; }
+  .journal-card .team{ display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+  .journal-card .chip{ display:flex; align-items:center; gap:5px; font-size:11px; color:var(--ink-soft); background:var(--surface-2); border-radius:20px; padding:3px 8px 3px 6px; }
+  .journal-card .chip .dot{ width:7px; height:7px; border-radius:50%; flex:none; }
+  .journal-card .mini-bar{ height:5px; border-radius:3px; background:var(--border); overflow:hidden; margin-top:12px; }
+  .journal-card .mini-bar > span{ display:block; height:100%; border-radius:3px; background:var(--accent); }
+  .journal-card .mini-txt{ margin-top:5px; font:500 11px/1 "IBM Plex Mono",monospace; color:var(--muted); }
+  .journal-card .del-btn{ all:unset; cursor:pointer; position:absolute; top:12px; right:12px; color:var(--muted); font-size:15px; line-height:1; padding:2px 5px; border-radius:5px; }
+  .journal-card .del-btn:hover{ color:var(--danger); background:var(--danger-soft); }
+  .new-journal-card{ all:unset; cursor:pointer; display:flex; align-items:center; justify-content:center; min-height:96px; border:1.5px dashed var(--border); border-radius:12px; color:var(--accent); font:600 13px/1 "IBM Plex Sans",sans-serif; }
+  .new-journal-card:hover{ background:var(--accent-soft); border-color:var(--accent); }
+  .empty-state{ text-align:center; padding:60px 20px; color:var(--ink-soft); }
+  .empty-state p{ font-size:14px; margin:0 0 16px; }
+
+  /* ---------- create form ---------- */
+  .field-label{ display:block; font:600 12px/1 "IBM Plex Sans",sans-serif; color:var(--ink-soft); margin-bottom:6px; }
+  .field-input{ all:unset; display:block; width:100%; font-size:14px; color:var(--ink); background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:10px 12px; max-width:420px; }
+  .field-input:focus{ border-color:var(--accent); }
+  .executors-list{ display:flex; flex-direction:column; gap:8px; max-width:520px; }
+  .executor-row{ display:flex; align-items:center; gap:8px; }
+  .executor-row .exec-name{ all:unset; flex:1; min-width:0; font-size:13.5px; color:var(--ink); background:var(--surface); border:1px solid var(--border); border-radius:7px; padding:8px 10px; }
+  .executor-row .exec-name:focus{ border-color:var(--accent); }
+  .swatches{ display:flex; gap:4px; flex:none; }
+  .color-swatch{ all:unset; cursor:pointer; width:18px; height:18px; border-radius:50%; box-shadow:inset 0 0 0 1.5px rgba(0,0,0,.06); }
+  .color-swatch.selected{ box-shadow:0 0 0 2px var(--surface), 0 0 0 3.5px var(--ink); }
+  .row-remove{ all:unset; cursor:pointer; color:var(--muted); font-size:16px; line-height:1; padding:2px 6px; border-radius:5px; flex:none; }
+  .row-remove:hover{ color:var(--danger); background:var(--danger-soft); }
+  .form-err{ min-height:16px; color:var(--danger); font-size:12.5px; margin-top:10px; }
+  .modal-actions{ display:flex; gap:8px; }
+  .btn{ all:unset; cursor:pointer; font:600 12.5px/1 "IBM Plex Sans",sans-serif; padding:10px 16px; border-radius:8px; }
+  .btn.primary{ background:var(--accent); color:var(--accent-ink); }
+  .btn.primary:hover{ filter:brightness(1.06); }
+  .btn.ghost{ color:var(--ink-soft); }
+  .btn.ghost:hover{ background:var(--surface-2); }
+
+  /* ---------- journal board ---------- */
+  .topbar{ display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:18px; margin-bottom:18px; }
+  .summary-card{ display:flex; align-items:center; gap:16px; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:12px 18px; box-shadow:var(--shadow); min-width:220px; }
+  .ring{ position:relative; width:52px; height:52px; flex:none; }
+  .ring svg{ width:52px; height:52px; transform:rotate(-90deg); }
+  .ring circle{ fill:none; stroke-width:5; }
+  .ring .track{ stroke:var(--border); }
+  .ring .fill{ stroke:var(--accent); stroke-linecap:round; transition:stroke-dasharray .25s ease; }
+  .ring .pct{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font:600 12px/1 "IBM Plex Mono",monospace; }
+  .summary-text .num{ font:700 18px/1.1 "IBM Plex Mono",monospace; }
+  .summary-text .lbl{ font-size:12px; color:var(--ink-soft); margin-top:3px; }
+
+  .weeknav{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:20px; }
+  .weeknav-core{ display:flex; align-items:center; gap:6px; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:8px 10px; box-shadow:var(--shadow); }
+  .weeknav-core button{ all:unset; cursor:pointer; width:30px; height:30px; display:flex; align-items:center; justify-content:center; border-radius:7px; color:var(--ink-soft); font-size:16px; flex:none; }
+  .weeknav-core button:hover{ background:var(--surface-2); color:var(--ink); }
+  .weeknav-core .range{ font:600 14px/1 "IBM Plex Mono",monospace; padding:0 6px; white-space:nowrap; }
+
+  .board-wrap{ overflow-x:auto; border-radius:12px; border:1px solid var(--border); box-shadow:var(--shadow); background:var(--surface); }
+  .board{ display:grid; }
+  .cell{ border-bottom:1px solid var(--border); border-right:1px solid var(--border); padding:12px; min-width:190px; }
+  .cell.corner{ min-width:136px; }
+  .cell.no-border-r{ border-right:none; }
+  .cell.no-border-b{ border-bottom:none; }
+  .corner{ background:var(--surface-2); }
+  .head{ background:var(--surface-2); padding:13px 12px; }
+  .head .person{ display:flex; align-items:center; gap:8px; font:700 14px/1 "Public Sans",sans-serif; }
+  .head .swatch{ width:9px; height:9px; border-radius:50%; flex:none; }
+  .head .prog{ margin-top:8px; }
+  .head .prog .bar{ height:5px; border-radius:3px; background:var(--border); overflow:hidden; }
+  .head .prog .bar > span{ display:block; height:100%; border-radius:3px; }
+  .head .prog .txt{ margin-top:5px; font:500 11px/1 "IBM Plex Mono",monospace; color:var(--ink-soft); }
+  .day{ background:var(--surface-2); display:flex; flex-direction:column; justify-content:center; min-width:136px; }
+  .day .name{ font:600 13px/1.3 "Public Sans",sans-serif; }
+  .day .date{ font:500 11px/1 "IBM Plex Mono",monospace; color:var(--muted); margin-top:4px; }
+  .day.is-today{ box-shadow:inset 3px 0 0 var(--accent); }
+  .tasklist{ display:flex; flex-direction:column; gap:6px; min-height:6px; }
+  .task{ display:flex; align-items:flex-start; gap:7px; }
+  .task .box{ all:unset; cursor:pointer; width:16px; height:16px; border-radius:5px; border:1.5px solid var(--border); flex:none; margin-top:1.5px; display:flex; align-items:center; justify-content:center; background:var(--surface); }
+  .task .box svg{ width:10px; height:10px; opacity:0; }
+  .task.done .box{ background:var(--accent); border-color:var(--accent); }
+  .task.done .box svg{ opacity:1; stroke:var(--accent-ink); }
+  .task .txt{ font-size:13px; line-height:1.4; flex:1; word-break:break-word; }
+  .task.done .txt{ color:var(--muted); text-decoration:line-through; text-decoration-color:var(--border); }
+  .task .del{ all:unset; cursor:pointer; color:var(--muted); font-size:15px; line-height:1; padding:1px 3px; border-radius:4px; flex:none; }
+  .task .del:hover{ color:var(--danger); background:var(--danger-soft); }
+  .addrow{ margin-top:9px; display:flex; gap:5px; }
+  .addrow input{ all:unset; flex:1; min-width:0; font-size:12.5px; color:var(--ink); background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:6px 8px; }
+  .addrow input::placeholder{ color:var(--muted); }
+  .addrow input:focus{ border-color:var(--accent); }
+  .addrow button{ all:unset; cursor:pointer; font:600 12px/1 "IBM Plex Sans",sans-serif; color:var(--accent-ink); background:var(--accent); border-radius:6px; padding:0 11px; display:flex; align-items:center; }
+  .addrow button:hover{ filter:brightness(1.06); }
+  .empty{ font-size:12px; color:var(--muted); font-style:italic; }
+
+  .readonly .addrow, .readonly .task .del, .readonly .task .box{ display:none; }
+  .readonly .new-journal-card, .readonly .journal-card .del-btn{ display:none; }
+
+  /* ---------- sign-in modal ---------- */
+  .modal-backdrop{ display:none; position:fixed; inset:0; background:rgba(20,30,18,.35); align-items:center; justify-content:center; padding:20px; z-index:10; }
+  .modal-backdrop.show{ display:flex; }
+  .modal{ background:var(--surface); border-radius:12px; border:1px solid var(--border); box-shadow:var(--shadow); padding:22px; max-width:420px; width:100%; }
+  .modal h3{ font-size:16px; font-weight:700; margin-bottom:8px; }
+  .modal p{ font-size:12.5px; color:var(--ink-soft); line-height:1.5; margin:0 0 12px; }
+  .modal a{ color:var(--accent); }
+  .modal input{ all:unset; width:100%; font-size:13px; font-family:"IBM Plex Mono",monospace; color:var(--ink); background:var(--surface-2); border:1px solid var(--border); border-radius:7px; padding:9px 10px; margin-bottom:12px; }
+  .modal .err{ color:var(--danger); font-size:12px; margin:-6px 0 12px; display:none; }
+  .modal .err.show{ display:block; }
+
+  @media (prefers-reduced-motion: reduce){ *{ animation:none !important; transition:none !important; } }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<div class="modal-backdrop" id="signin-modal">
+  <div class="modal">
+    <h3>Увійти як редактор</h3>
+    <p>
+      Вставте персональний токен GitHub із доступом лише до цього репозиторію
+      (Contents: Read and write). Створити токен:
+      <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">github.com/settings/personal-access-tokens/new</a>.
+      Токен зберігається лише у вашому браузері.
+    </p>
+    <input type="password" id="token-input" placeholder="github_pat_..." autocomplete="off">
+    <div class="err" id="token-err">Не вдалося увійти — перевірте токен і права доступу.</div>
+    <div class="modal-actions" style="justify-content:flex-end;">
+      <button type="button" class="btn ghost" id="token-cancel">Скасувати</button>
+      <button type="button" class="btn primary" id="token-submit">Увійти</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  // ------------------------------------------------------------------
+  // Налаштування: впишіть свої дані GitHub-репозиторію перед деплоєм.
+  // ------------------------------------------------------------------
+  const CONFIG = {
+    owner: 'ProdFactory',
+    repo:  'Work_Dashboard',
+    branch: 'main',
+    dataPath: 'tasks.json'
+  };
+
+  const PALETTE = [
+    { id:'blue',   name:'Синій' },
+    { id:'violet', name:'Фіолетовий' },
+    { id:'amber',  name:'Жовтий' },
+    { id:'green',  name:'Зелений' },
+    { id:'red',    name:'Червоний' },
+    { id:'teal',   name:'Бірюзовий' },
+    { id:'pink',   name:'Рожевий' },
+    { id:'gray',   name:'Сірий' }
+  ];
+  const PALETTE_IDS = PALETTE.map(c=>c.id);
+  const DAY_NAMES = ['Понеділок','Вівторок','Середа','Четвер',"П'ятниця"];
+  const MONTHS_GEN = ['січня','лютого','березня','квітня','травня','червня','липня','серпня','вересня','жовтня','листопада','грудня'];
+
+  let STATE = { journals: [] };
+  let saving = false;
+  let loadError = false;
+  let currentLogin = null;
+
+  // ---------- date helpers ----------
+  function startOfWeek(d){ const x=new Date(d); const day=(x.getDay()+6)%7; x.setDate(x.getDate()-day); x.setHours(0,0,0,0); return x; }
+  function addDays(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x; }
+  function iso(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  function sameDay(a,b){ return iso(a)===iso(b); }
+  function fmtRange(ws){
+    const end = addDays(ws,4);
+    if(ws.getMonth()===end.getMonth()) return ws.getDate()+'–'+end.getDate()+' '+MONTHS_GEN[end.getMonth()]+' '+end.getFullYear();
+    return ws.getDate()+' '+MONTHS_GEN[ws.getMonth()]+' – '+end.getDate()+' '+MONTHS_GEN[end.getMonth()]+' '+end.getFullYear();
+  }
+  function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  function uid(){ return (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : 't'+Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
+  function colorId(id){ return PALETTE_IDS.includes(id) ? id : 'gray'; }
+
+  function migrateState(){
+    if(!STATE || typeof STATE !== 'object') STATE = { journals: [] };
+    if(!Array.isArray(STATE.journals)){
+      if(Array.isArray(STATE.tasks)){
+        STATE = { journals: [{
+          id: uid(), name: STATE.project || 'Журнал',
+          people: [ {id:'nikola',name:'Микола',colorId:'blue'}, {id:'nazar',name:'Назар',colorId:'violet'}, {id:'olesya',name:'Олеся',colorId:'amber'} ],
+          tasks: STATE.tasks,
+          createdAt: STATE.updatedAt || new Date().toISOString(),
+          updatedAt: STATE.updatedAt || new Date().toISOString()
+        }] };
+      } else {
+        STATE = { journals: [] };
+      }
+    }
+  }
+
+  // ---------- routing ----------
+  function parseHash(){
+    const h = decodeURIComponent(location.hash.replace(/^#/,''));
+    if(h.indexOf('j/')===0) return { mode:'journal', id:h.slice(2) };
+    if(h==='new') return { mode:'create' };
+    return { mode:'menu' };
+  }
+  let route = parseHash();
+  function navigate(hash){ location.hash = hash; }
+  window.addEventListener('hashchange', ()=>{ route = parseHash(); renderApp(); });
+
+  // ---------- token storage ----------
+  const TOKEN_KEY = `ctj_gh_token_${CONFIG.owner}_${CONFIG.repo}`;
+  function getToken(){ try{ return localStorage.getItem(TOKEN_KEY); }catch(e){ return null; } }
+  function setToken(t){ try{ localStorage.setItem(TOKEN_KEY, t); }catch(e){} }
+  function clearToken(){ try{ localStorage.removeItem(TOKEN_KEY); }catch(e){} }
+  function canWrite(){ return !!getToken() && !!currentLogin; }
+
+  function authHeaders(){
+    const h = { 'Accept':'application/vnd.github+json' };
+    const t = getToken();
+    if(t) h['Authorization'] = `Bearer ${t}`;
+    return h;
+  }
+
+  // ---------- base64 (unicode-safe) ----------
+  function b64Encode(str){ return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g,(m,p)=>String.fromCharCode('0x'+p))); }
+  function b64Decode(str){ return decodeURIComponent(atob(str.replace(/\n/g,'')).split('').map(c=>'%'+('00'+c.charCodeAt(0).toString(16)).slice(-2)).join('')); }
+
+  // ---------- GitHub API ----------
+  async function ghWhoAmI(token){
+    const res = await fetch('https://api.github.com/user', { headers:{ Authorization:`Bearer ${token}`, Accept:'application/vnd.github+json' } });
+    if(!res.ok) throw new Error('auth_failed');
+    return res.json();
+  }
+  async function ghGetFile(){
+    const url = `https://api.github.com/repos/${CONFIG.owner}/${CONFIG.repo}/contents/${CONFIG.dataPath}?ref=${CONFIG.branch}`;
+    const res = await fetch(url, { headers: authHeaders() });
+    if(!res.ok) throw { code:'read_failed', status:res.status };
+    return res.json();
+  }
+  async function ghPutFile(stateObj, sha){
+    const url = `https://api.github.com/repos/${CONFIG.owner}/${CONFIG.repo}/contents/${CONFIG.dataPath}`;
+    const body = { message: `Оновлення журналів · ${new Date().toISOString()}`, content: b64Encode(JSON.stringify(stateObj, null, 2)), sha, branch: CONFIG.branch };
+    const res = await fetch(url, { method:'PUT', headers:{ ...authHeaders(), 'Content-Type':'application/json' }, body: JSON.stringify(body) });
+    if(res.status===409) throw { code:'conflict' };
+    if(!res.ok) throw { code:'write_failed', status:res.status };
+    return res.json();
+  }
+
+  // ---------- data load ----------
+  async function loadTasks(){
+    try{
+      const res = await fetch('./' + CONFIG.dataPath + '?t=' + Date.now(), { cache:'no-store' });
+      if(res.ok){ STATE = await res.json(); migrateState(); loadError = false; }
+      else { loadError = true; }
+    }catch(e){ loadError = true; }
+    renderApp();
+  }
+  async function loadFromApiFresh(){
+    try{
+      const file = await ghGetFile();
+      STATE = JSON.parse(b64Decode(file.content));
+      migrateState();
+    }catch(e){ /* keep whatever we had */ }
+    renderApp();
+  }
+
+  // ---------- data access ----------
+  function findJournal(id){ return STATE.journals.find(j=>j.id===id); }
+  function weekStartKey(journalId){ return 'ctj_week_'+journalId; }
+  function getWeekStart(journalId){
+    let ws = startOfWeek(new Date());
+    try{ const saved = localStorage.getItem(weekStartKey(journalId)); if(saved !== null) ws = addDays(startOfWeek(new Date()), parseInt(saved,10)*7); }catch(e){}
+    return ws;
+  }
+  function setWeekStart(journalId, ws){
+    try{ localStorage.setItem(weekStartKey(journalId), String(Math.round((ws-startOfWeek(new Date()))/(7*86400000)))); }catch(e){}
+  }
+  function tasksFor(j, personId, dateIso){ return j.tasks.filter(t => t.person===personId && t.date===dateIso); }
+  function weekTasks(j, ws){ const s=iso(ws), e=iso(addDays(ws,4)); return j.tasks.filter(t => t.date>=s && t.date<=e); }
+  function progressOf(list){ const total=list.length, done=list.filter(t=>t.done).length; return { total, done, pct: total?Math.round(done/total*100):0 }; }
+
+  // ---------- render dispatch ----------
+  function renderApp(){
+    const app = document.getElementById('app');
+    const writable = canWrite();
+    app.className = writable ? '' : 'readonly';
+
+    let topBar = `<div class="app-topbar">`;
+    topBar += `<button type="button" class="pill-btn" data-action="refresh">⟳ Оновити</button>`;
+    topBar += writable
+      ? `<div class="authbox">${saving?'<span class="saving-dot"></span> Збереження…':`<span>✓</span> <span class="who">${escapeHtml(currentLogin)}</span>`}<button type="button" class="signout" data-action="sign-out">Вийти</button></div>`
+      : `<button type="button" class="pill-btn" data-action="sign-in">🔑 Увійти як редактор</button>`;
+    topBar += `</div>`;
+
+    let banner = '';
+    if(loadError) banner = `<div class="banner warn show"><span class="dot"></span><span>Не вдалося завантажити ${CONFIG.dataPath} із репозиторію. Перевірте налаштування CONFIG у index.html.</span></div>`;
+    else if(!writable) banner = `<div class="banner show"><span class="dot"></span><span>Режим лише перегляду. Щоб редагувати — увійдіть токеном редактора.</span></div>`;
+
+    let body;
+    if(route.mode==='create') body = renderCreate(writable);
+    else if(route.mode==='journal'){
+      const j = findJournal(route.id);
+      if(!j){ route = { mode:'menu' }; body = renderMenu(writable); }
+      else body = renderJournal(j, writable);
+    } else {
+      body = renderMenu(writable);
+    }
+
+    app.innerHTML = topBar + banner + body;
+    if(route.mode==='create' && writable){
+      const list = document.getElementById('executors-list');
+      if(list && !list.children.length) addExecutorRow(list, '', null);
+    }
+  }
+
+  // ---------- menu view ----------
+  function renderMenu(writable){
+    let html = `
+      <div class="menu-head">
+        <div>
+          <h1 class="h1">Журнали команди</h1>
+          <p class="page-sub">Оберіть проєкт або створіть новий журнал завдань.</p>
+        </div>
+      </div>`;
+    if(STATE.journals.length === 0){
+      html += `<div class="empty-state"><p>Поки що немає жодного журналу.</p>${writable ? `<button type="button" class="btn primary" data-action="go-create">+ Створити журнал</button>` : ''}</div>`;
+      return html;
+    }
+    html += `<div class="journal-grid">`;
+    STATE.journals.forEach(j=>{
+      const pr = progressOf(weekTasks(j, getWeekStart(j.id)));
+      html += `
+        <button type="button" class="journal-card" data-action="open-journal" data-id="${j.id}">
+          <div class="name">${escapeHtml(j.name)}</div>
+          <div class="team">${j.people.map(p=>`<span class="chip"><span class="dot" style="background:var(--tag-${colorId(p.colorId)})"></span>${escapeHtml(p.name)}</span>`).join('')}</div>
+          <div class="mini-bar"><span style="width:${pr.pct}%"></span></div>
+          <div class="mini-txt">${pr.done}/${pr.total} завдань цього тижня</div>
+          <span class="del-btn" data-action="delete-journal" data-id="${j.id}" title="Видалити журнал">×</span>
+        </button>`;
+    });
+    if(writable) html += `<button type="button" class="new-journal-card" data-action="go-create">+ Новий журнал</button>`;
+    html += `</div>`;
+    return html;
+  }
+
+  // ---------- create view ----------
+  function renderCreate(writable){
+    if(!writable){
+      return `<button type="button" class="back-link" data-action="go-menu">← Головне меню</button><div class="empty-state"><p>Тільки редактори можуть створювати нові журнали.</p></div>`;
+    }
+    return `
+      <button type="button" class="back-link" data-action="go-menu">← Головне меню</button>
+      <h1 class="h1">Новий журнал</h1>
+      <form data-action="create-journal-form" style="margin-top:18px;">
+        <label class="field-label" for="create-name">Назва проєкту</label>
+        <input type="text" id="create-name" class="field-input" maxlength="80" placeholder="Наприклад, Calorie Tracker">
+        <label class="field-label" style="margin-top:20px;">Виконавці</label>
+        <div id="executors-list" class="executors-list"></div>
+        <button type="button" class="pill-btn" data-action="add-executor-row" style="margin-top:10px;">+ Додати виконавця</button>
+        <div class="form-err" id="create-err"></div>
+        <div class="modal-actions" style="margin-top:8px;">
+          <button type="button" class="btn ghost" data-action="go-menu">Скасувати</button>
+          <button type="submit" class="btn primary">Створити журнал</button>
+        </div>
+      </form>`;
+  }
+
+  function swatchesHtml(selected){
+    return PALETTE.map(c=>`<button type="button" class="color-swatch${c.id===selected?' selected':''}" data-action="pick-color" data-color="${c.id}" style="background:var(--tag-${c.id})" title="${c.name}"></button>`).join('');
+  }
+  function addExecutorRow(container, name, selectedColor){
+    const row = document.createElement('div');
+    row.className = 'executor-row';
+    row.innerHTML =
+      `<input type="text" class="exec-name" placeholder="Ім'я виконавця" maxlength="40" value="${name?escapeHtml(name):''}">`+
+      `<div class="swatches">${swatchesHtml(selectedColor)}</div>`+
+      `<button type="button" class="row-remove" data-action="remove-executor-row" aria-label="Видалити">×</button>`;
+    container.appendChild(row);
+    return row;
+  }
+
+  function handleCreateSubmit(){
+    const nameInput = document.getElementById('create-name');
+    const errEl = document.getElementById('create-err');
+    const name = nameInput.value.trim();
+    errEl.textContent = '';
+    if(!name){ errEl.textContent = 'Вкажіть назву проєкту.'; return; }
+    const rows = Array.from(document.querySelectorAll('#executors-list .executor-row'));
+    const people = [];
+    let missingColor = false;
+    rows.forEach(row=>{
+      const nm = row.querySelector('.exec-name').value.trim();
+      if(!nm) return;
+      const sel = row.querySelector('.color-swatch.selected');
+      if(!sel){ missingColor = true; return; }
+      people.push({ id: uid(), name: nm, colorId: sel.getAttribute('data-color') });
+    });
+    if(missingColor){ errEl.textContent = 'Оберіть колір для кожного виконавця.'; return; }
+    if(people.length===0){ errEl.textContent = 'Додайте хоча б одного виконавця.'; return; }
+    createJournal(name, people);
+  }
+
+  function createJournal(name, people){
+    const journal = { id: uid(), name, people, tasks: [], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+    route = { mode:'journal', id: journal.id };
+    location.hash = 'j/' + journal.id;
+    mutate(
+      ()=>{ STATE.journals.push(journal); },
+      ()=>{ STATE.journals = STATE.journals.filter(j=>j.id!==journal.id); route = { mode:'menu' }; location.hash=''; }
+    );
+  }
+
+  function deleteJournalAction(id){
+    const j = findJournal(id);
+    if(!j) return;
+    if(!window.confirm(`Видалити журнал «${j.name}»? Це не можна скасувати.`)) return;
+    const idx = STATE.journals.findIndex(x=>x.id===id);
+    const removed = STATE.journals[idx];
+    const wasOpen = route.mode==='journal' && route.id===id;
+    mutate(
+      ()=>{ STATE.journals.splice(idx,1); if(wasOpen){ route={mode:'menu'}; location.hash=''; } },
+      ()=>{ STATE.journals.splice(idx,0,removed); }
+    );
+  }
+
+  // ---------- journal board ----------
+  function renderJournal(j, writable){
+    const ws = getWeekStart(j.id);
+    const overall = progressOf(weekTasks(j, ws));
+    const today = new Date();
+    const people = j.people;
+
+    let head = `
+      <button type="button" class="back-link" data-action="go-menu">← Головне меню</button>
+      <div class="topbar">
+        <h1 class="h1">${escapeHtml(j.name)}</h1>
+        <div class="summary-card">
+          <div class="ring">
+            <svg viewBox="0 0 52 52"><circle class="track" cx="26" cy="26" r="21"></circle>
+              <circle class="fill" cx="26" cy="26" r="21" stroke-dasharray="${(overall.pct/100*131.9).toFixed(1)} 131.9"></circle>
+            </svg>
+            <div class="pct">${overall.pct}%</div>
+          </div>
+          <div class="summary-text"><div class="num">${overall.done}/${overall.total}</div><div class="lbl">завдань за тиждень</div></div>
+        </div>
+      </div>
+      <div class="weeknav">
+        <div class="weeknav-core">
+          <button type="button" data-action="prev-week" data-journal="${j.id}" aria-label="Попередній тиждень">‹</button>
+          <div class="range mono">${fmtRange(ws)}</div>
+          <button type="button" data-action="next-week" data-journal="${j.id}" aria-label="Наступний тиждень">›</button>
+        </div>
+        <button type="button" class="pill-btn" data-action="this-week" data-journal="${j.id}">Поточний тиждень</button>
+      </div>`;
+
+    let board = `<div class="board" style="grid-template-columns:136px repeat(${people.length}, minmax(190px,1fr));">`;
+    board += `<div class="cell corner no-border-b"></div>`;
+    people.forEach((p,pi)=>{
+      const pr = progressOf(weekTasks(j, ws).filter(t=>t.person===p.id));
+      const last = pi===people.length-1;
+      board += `
+        <div class="cell head no-border-b${last?' no-border-r':''}">
+          <div class="person"><span class="swatch" style="background:var(--tag-${colorId(p.colorId)})"></span>${escapeHtml(p.name)}</div>
+          <div class="prog"><div class="bar"><span style="width:${pr.pct}%;background:var(--tag-${colorId(p.colorId)})"></span></div><div class="txt">${pr.done}/${pr.total} · ${pr.pct}%</div></div>
+        </div>`;
+    });
+
+    for(let i=0;i<5;i++){
+      const d = addDays(ws, i), dISO = iso(d), isToday = sameDay(d, today), lastRow = i===4;
+      board += `<div class="cell day${isToday?' is-today':''}${lastRow?' no-border-b':''}"><div class="name">${DAY_NAMES[i]}</div><div class="date">${d.getDate()} ${MONTHS_GEN[d.getMonth()]}</div></div>`;
+      people.forEach((p,pi)=>{
+        const list = tasksFor(j, p.id, dISO);
+        const last = pi===people.length-1;
+        board += `<div class="cell${lastRow?' no-border-b':''}${last?' no-border-r':''}"><div class="tasklist">`;
+        board += list.length===0
+          ? `<div class="empty">Немає завдань</div>`
+          : list.map(t=>`
+              <div class="task${t.done?' done':''}">
+                <button type="button" class="box" data-action="toggle" data-journal="${j.id}" data-id="${t.id}" aria-label="Позначити виконаним">
+                  <svg viewBox="0 0 10 10"><path d="M1 5l2.5 2.5L9 2" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+                <div class="txt">${escapeHtml(t.text)}</div>
+                <button type="button" class="del" data-action="delete" data-journal="${j.id}" data-id="${t.id}" aria-label="Видалити">×</button>
+              </div>`).join('');
+        board += `</div>`;
+        board += `<form class="addrow" data-action="add-form" data-journal="${j.id}" data-person="${p.id}" data-date="${dISO}">
+            <input type="text" maxlength="140" placeholder="+ додати завдання" data-role="add-input">
+            <button type="submit">Додати</button>
+          </form></div>`;
+      });
+    }
+    board += `</div>`;
+
+    return head + `<div class="board-wrap">${board}</div>`;
+  }
+
+  // ---------- mutations ----------
+  async function mutate(applyFn, revertFn){
+    applyFn();
+    renderApp();
+    if(!getToken()){ return; }
+    saving = true; renderApp();
+    try{
+      const file = await ghGetFile();
+      await ghPutFile(STATE, file.sha);
+      saving = false; renderApp();
+    }catch(err){
+      saving = false;
+      if(err && err.code === 'conflict'){
+        await loadFromApiFresh();
+      } else {
+        if(revertFn) revertFn();
+        renderApp();
+        alert('Не вдалося зберегти зміни. Перевірте зʼєднання й спробуйте ще раз.');
+      }
+    }
+  }
+
+  function addTask(journalId, personId, dateIso, text){
+    const j = findJournal(journalId); if(!j) return;
+    const clean = text.trim(); if(!clean) return;
+    const task = { id: uid(), person: personId, date: dateIso, text: clean, done:false, createdAt: new Date().toISOString() };
+    mutate(()=>{ j.tasks.push(task); j.updatedAt = new Date().toISOString(); }, ()=>{ j.tasks = j.tasks.filter(t=>t.id!==task.id); });
+  }
+  function toggleTask(journalId, id){
+    const j = findJournal(journalId); if(!j) return;
+    const t = j.tasks.find(t=>t.id===id); if(!t) return;
+    const prev = t.done;
+    mutate(()=>{ t.done = !t.done; j.updatedAt = new Date().toISOString(); }, ()=>{ t.done = prev; });
+  }
+  function deleteTask(journalId, id){
+    const j = findJournal(journalId); if(!j) return;
+    const idx = j.tasks.findIndex(t=>t.id===id); if(idx===-1) return;
+    const removed = j.tasks[idx];
+    mutate(()=>{ j.tasks.splice(idx,1); j.updatedAt = new Date().toISOString(); }, ()=>{ j.tasks.splice(idx,0,removed); });
+  }
+
+  // ---------- sign in / out ----------
+  const modal = document.getElementById('signin-modal');
+  const tokenInput = document.getElementById('token-input');
+  const tokenErr = document.getElementById('token-err');
+
+  function openModal(){ tokenErr.classList.remove('show'); tokenInput.value=''; modal.classList.add('show'); tokenInput.focus(); }
+  function closeModal(){ modal.classList.remove('show'); }
+
+  document.getElementById('token-cancel').addEventListener('click', closeModal);
+  document.getElementById('token-submit').addEventListener('click', async ()=>{
+    const token = tokenInput.value.trim();
+    if(!token) return;
+    try{
+      const user = await ghWhoAmI(token);
+      setToken(token);
+      currentLogin = user.login;
+      closeModal();
+      renderApp();
+    }catch(e){
+      tokenErr.classList.add('show');
+    }
+  });
+
+  // ---------- events ----------
+  document.addEventListener('click', e=>{
+    const nav = e.target.closest('[data-action]');
+    if(!nav) return;
+    const action = nav.getAttribute('data-action');
+
+    if(action==='go-menu'){ navigate(''); return; }
+    if(action==='go-create'){ navigate('new'); return; }
+    if(action==='open-journal'){ navigate('j/'+nav.getAttribute('data-id')); return; }
+    if(action==='delete-journal'){ e.stopPropagation(); deleteJournalAction(nav.getAttribute('data-id')); return; }
+
+    if(action==='add-executor-row'){ addExecutorRow(document.getElementById('executors-list'), '', null); return; }
+    if(action==='remove-executor-row'){ nav.closest('.executor-row').remove(); return; }
+    if(action==='pick-color'){ nav.parentElement.querySelectorAll('.color-swatch').forEach(b=>b.classList.remove('selected')); nav.classList.add('selected'); return; }
+
+    if(action==='prev-week' || action==='next-week' || action==='this-week'){
+      const jid = nav.getAttribute('data-journal');
+      let ws = getWeekStart(jid);
+      if(action==='prev-week') ws = addDays(ws,-7);
+      if(action==='next-week') ws = addDays(ws,7);
+      if(action==='this-week') ws = startOfWeek(new Date());
+      setWeekStart(jid, ws);
+      renderApp();
+      return;
+    }
+    if(action==='refresh'){ loadTasks(); return; }
+    if(action==='sign-in'){ openModal(); return; }
+    if(action==='sign-out'){ clearToken(); currentLogin=null; renderApp(); return; }
+    if(action==='toggle'){ toggleTask(nav.getAttribute('data-journal'), nav.getAttribute('data-id')); return; }
+    if(action==='delete'){ deleteTask(nav.getAttribute('data-journal'), nav.getAttribute('data-id')); return; }
+  });
+
+  document.addEventListener('submit', e=>{
+    const addForm = e.target.closest('[data-action="add-form"]');
+    if(addForm){
+      e.preventDefault();
+      const input = addForm.querySelector('[data-role="add-input"]');
+      addTask(addForm.getAttribute('data-journal'), addForm.getAttribute('data-person'), addForm.getAttribute('data-date'), input.value);
+      input.value=''; input.focus();
+      return;
+    }
+    const createForm = e.target.closest('[data-action="create-journal-form"]');
+    if(createForm){ e.preventDefault(); handleCreateSubmit(); return; }
+  });
+
+  // ---------- init ----------
+  migrateState();
+  renderApp();
+  loadTasks();
+  const savedToken = getToken();
+  if(savedToken){
+    ghWhoAmI(savedToken).then(user=>{ currentLogin = user.login; renderApp(); }).catch(()=>{ clearToken(); renderApp(); });
+  }
+})();
+</script>
+</body>
+</html>
