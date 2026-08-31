@@ -20,9 +20,18 @@
           "colorId": "amber"
         }
       ],
-      "tasks": [],
+      "tasks": [
+        {
+          "id": "2b3365ca-7a52-467f-879c-819654fc25e5",
+          "person": "f4bc2a1d-6906-40e7-a41e-a4d82e9cca4c",
+          "date": "2026-08-31",
+          "text": "Онбордінг",
+          "done": false,
+          "createdAt": "2026-08-31T15:54:52.126Z"
+        }
+      ],
       "createdAt": "2026-08-31T15:53:48.893Z",
-      "updatedAt": "2026-08-31T15:53:48.893Z"
+      "updatedAt": "2026-08-31T15:54:52.126Z"
     }
   ]
 }
